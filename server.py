@@ -10,9 +10,13 @@ VCE Advisor - Flask 后端（Supabase 版）
 """
 
 import os
-from flask import Flask, jsonify, request, send_from_directory
+from flask import Flask, jsonify, request, send_from_directory 
 from flask_cors import CORS
 from supabase import create_client, Client
+# from flask.cli import load_dotenv
+
+# load_dotenv() 
+# # 本地开发时从 .env 文件加载环境变量，部署后 Render 会自动设置环境变量
 
 app = Flask(__name__, static_folder='.')
 CORS(app)
@@ -49,21 +53,49 @@ supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 # ─────────────────────────────────────────────
 
 def load_all():
-    """读取所有大学和课程，组合成前端需要的结构"""
-    unis_res = supabase.table('unis').select('*').order('state').execute()
-    courses_res = supabase.table('courses').select('*').execute()
+    """读取所有大学和课程，带有地毯式排查打印"""
+    print("\n[STEP 1] 🚀 开始进入 load_all() 函数...")
+    
+    # ── 1. 测试 unis 表查询
+    try:
+        print("[STEP 2] 正在尝试读取 Supabase 的 'unis' 表...")
+        unis_res = supabase.table('unis').select('*').execute()
+        print(f"[STEP 3] ✅ 'unis' 表读取成功！拿到 {len(unis_res.data)} 条大学数据。")
+        unis = unis_res.data
+    except Exception as e:
+        print(f"❌ [ERROR] 在读取 'unis' 表时崩溃了！具体错误是: {str(e)}")
+        return [{"id": "error", "name": f"数据库unis表读取失败: {str(e)}", "courses": []}]
 
-    unis = unis_res.data
-    courses = courses_res.data
+    # ── 2. 测试 courses 表查询
+    try:
+        print("[STEP 4] 正在尝试读取 Supabase 的 'courses' 表...")
+        courses_res = supabase.table('courses').select('*').execute()
+        print(f"[STEP 5] ✅ 'courses' 表读取成功！拿到 {len(courses_res.data)} 条课程数据。")
+        courses = courses_res.data
+    except Exception as e:
+        print(f"❌ [ERROR] 在读取 'courses' 表时崩溃了！具体错误是: {str(e)}")
+        return [{"id": "error", "name": f"数据库courses表读取失败: {str(e)}", "courses": []}]
 
-    # 把课程挂到对应大学下面
-    for uni in unis:
-        uni['courses'] = [c for c in courses if c['uni_id'] == uni['id']]
-        # 删掉前端不需要的 uni_id 字段
-        for c in uni['courses']:
-            c.pop('uni_id', None)
-
-    return unis
+    # ── 3. 测试内存拼装逻辑
+    try:
+        print("[STEP 6] 正在尝试在内存中循环拼装大学和课程的嵌套结构...")
+        for uni in unis:
+            # 检查 uni 字典里有没有 'id'
+            if 'id' not in uni:
+                print(f"⚠️ 警告: 这条大学数据里居然没有 'id' 键! 数据内容: {uni}")
+            
+            # 过滤课程
+            uni['courses'] = [c for c in courses if c.get('uni_id') == uni.get('id')]
+            
+            # 安全移除 uni_id
+            for c in uni['courses']:
+                c.pop('uni_id', None)
+                
+        print("[STEP 7] 🎉 所有数据拼装成功！准备返回给前端。")
+        return unis
+    except Exception as e:
+        print(f"❌ [ERROR] 数据在内存循环拼装、清洗时崩溃了！具体错误是: {str(e)}")
+        return [{"id": "error", "name": f"内存拼装失败: {str(e)}", "courses": []}]
 
 # ── 静态文件
 @app.route('/')
@@ -161,4 +193,4 @@ def delete_course(uni_id, course_idx):
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     print(f"✅ 启动中... http://localhost:{port}")
-    app.run(host='0.0.0.0', port=port, debug=False)
+    app.run(host='0.0.0.0', port=port, debug=True)
