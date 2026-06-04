@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VCE 留学顾问助手</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="layout">
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sidebar-top">
+      <div class="logo">
+        <div class="logo-mark"><svg viewBox="0 0 16 16"><path d="M8 2L2 6v8h4v-4h4v4h4V6L8 2z"/></svg></div>
+        <div><div class="logo-text">VCE Advisor</div><div class="logo-sub">澳洲留学顾问助手</div></div>
+      </div>
+      <div class="filter-section">
+        <div class="filter-label">筛选大学</div>
+        <div class="search-wrap">
+          <svg viewBox="0 0 16 16"><circle cx="6.5" cy="6.5" r="4"/><path d="M11 11l3 3"/></svg>
+          <input id="uniSearch" type="text" placeholder="搜索大学名称..." oninput="filterUnis()"/>
+        </div>
+        <div class="state-pills">
+          <button class="pill active" onclick="filterState('all',this)">全部</button>
+          <button class="pill" onclick="filterState('VIC',this)">VIC</button>
+          <button class="pill" onclick="filterState('NSW',this)">NSW</button>
+          <button class="pill" onclick="filterState('QLD',this)">QLD</button>
+          <button class="pill" onclick="filterState('WA',this)">WA</button>
+          <button class="pill" onclick="filterState('SA',this)">SA</button>
+          <button class="pill" onclick="filterState('ACT',this)">ACT</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="uni-list-wrap" id="uniListWrap"></div>
+
+    <div class="add-url-section">
+      <div class="add-url-label">添加课程</div>
+      <div class="url-row">
+        <input id="urlInput" type="text" placeholder="粘贴课程页面 URL（可选）"/>
+        <button class="add-btn" onclick="addCourseUrl()">+ 添加</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+    <div class="main-header">
+      <div class="header-left">
+        <div class="header-title" id="headerTitle">选择大学开始咨询</div>
+        <div class="header-sub" id="headerSub">从左侧选择大学，或添加课程</div>
+      </div>
+      <div class="header-right">
+        <div class="context-badge" id="contextBadge" style="display:none">VCE · 本地学生</div>
+      </div>
+    </div>
+
+    <div id="contentArea" style="flex:1;display:flex;flex-direction:column;overflow:hidden;">
+      <div class="welcome-area">
+        <div class="welcome-title">你好，<span>顾问</span>👋</div>
+        <p class="welcome-desc">从左侧筛选并选择大学，或点击以下热门课程快速开始。</p>
+        <div class="welcome-grid" id="welcomeGrid"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── 添加课程 Modal ── -->
+<div id="addCourseModal" class="modal-backdrop" style="display:none">
+  <div class="modal-content">
+    <div class="modal-header">添加课程</div>
+    <div class="modal-body">
+
+      <div class="form-section-title">大学信息</div>
+      <div>
+        <label class="field-label">选择已有大学</label>
+        <select id="modalUniSelect" class="form-control" onchange="onUniSelectChange()">
+          <option value="">— 新建大学 —</option>
+        </select>
+      </div>
+      <div class="form-grid">
+        <div>
+          <label class="field-label">大学名称 *</label>
+          <input id="modalUniName" type="text" placeholder="如：RMIT University" class="form-control"/>
+        </div>
+        <div>
+          <label class="field-label">简称</label>
+          <input id="modalUniAbbr" type="text" placeholder="如：RMIT" class="form-control"/>
+        </div>
+      </div>
+      <div class="form-grid">
+        <div>
+          <label class="field-label">州 *</label>
+          <select id="modalState" class="form-control">
+            <option value="">选择州...</option>
+            <option value="VIC">VIC</option><option value="NSW">NSW</option>
+            <option value="QLD">QLD</option><option value="WA">WA</option>
+            <option value="SA">SA</option><option value="ACT">ACT</option>
+            <option value="TAS">TAS</option><option value="NT">NT</option>
+          </select>
+        </div>
+        <div>
+          <label class="field-label">城市</label>
+          <input id="modalCity" type="text" placeholder="如：墨尔本" class="form-control"/>
+        </div>
+      </div>
+
+      <div class="form-section-title" style="margin-top:14px">课程信息</div>
+      <div>
+        <label class="field-label">课程名称 *</label>
+        <input id="modalCourseName" type="text" placeholder="如：Bachelor of Construction Management (Honours)" class="form-control"/>
+      </div>
+      <div class="form-grid">
+        <div><label class="field-label">课程代码</label><input id="modalCode" type="text" placeholder="如：BH114" class="form-control"/></div>
+        <div><label class="field-label">参考 ATAR</label><input id="modalAtar" type="text" placeholder="如：65.15" class="form-control"/></div>
+      </div>
+      <div class="form-grid">
+        <div><label class="field-label">学制</label><input id="modalDuration" type="text" placeholder="如：全日制 4 年" class="form-control"/></div>
+        <div><label class="field-label">入学时间</label><input id="modalIntake" type="text" placeholder="如：2月、7月" class="form-control"/></div>
+      </div>
+
+      <div class="form-section-title" style="margin-top:14px">VCE 入学要求</div>
+      <div class="form-grid">
+        <div><label class="field-label">英语最低分（非EAL）</label><input id="modalEng" type="number" placeholder="如：25" class="form-control"/></div>
+        <div><label class="field-label">英语最低分（EAL）</label><input id="modalEal" type="number" placeholder="如：27" class="form-control"/></div>
+      </div>
+      <div>
+        <label class="field-label">数学要求</label>
+        <input id="modalMaths" type="text" placeholder="如：任意数学 Units 3&4 ≥20分" class="form-control"/>
+      </div>
+      <div>
+        <label class="field-label">备注 / 加分项</label>
+        <input id="modalNotes" type="text" placeholder="如：女性额外加分；CIOB 认证" class="form-control"/>
+      </div>
+      <div>
+        <label class="field-label">课程页面 URL（可选）</label>
+        <input id="modalUrl" type="text" placeholder="https://..." class="form-control"/>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="pill" onclick="closeModal()">取消</button>
+      <button class="add-btn" onclick="saveCustomCourse()">确认保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── 编辑课程 Modal ── -->
+<div id="editCourseModal" class="modal-backdrop" style="display:none">
+  <div class="modal-content">
+    <div class="modal-header">编辑课程入学条件</div>
+    <div class="modal-body">
+      <input type="hidden" id="editCourseIdx"/>
+      <div>
+        <label class="field-label">课程名称</label>
+        <input id="editCourseName" type="text" class="form-control"/>
+      </div>
+      <div class="form-grid">
+        <div><label class="field-label">课程代码</label><input id="editCode" type="text" class="form-control"/></div>
+        <div><label class="field-label">参考 ATAR</label><input id="editAtar" type="text" class="form-control"/></div>
+      </div>
+      <div class="form-grid">
+        <div><label class="field-label">英语（非EAL）</label><input id="editEng" type="number" class="form-control"/></div>
+        <div><label class="field-label">英语（EAL）</label><input id="editEal" type="number" class="form-control"/></div>
+      </div>
+      <div>
+        <label class="field-label">数学要求</label>
+        <input id="editMaths" type="text" class="form-control"/>
+      </div>
+      <div class="form-grid">
+        <div><label class="field-label">学制</label><input id="editDuration" type="text" class="form-control"/></div>
+        <div><label class="field-label">入学时间</label><input id="editIntake" type="text" class="form-control"/></div>
+      </div>
+      <div>
+        <label class="field-label">备注 / 加分项</label>
+        <input id="editNotes" type="text" class="form-control"/>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="pill" onclick="closeModal()">取消</button>
+      <button class="add-btn" onclick="saveEditCourse()">保存修改</button>
+    </div>
+  </div>
+</div>
+
+<script src="data.js"></script>
+<script src="ai-service.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
